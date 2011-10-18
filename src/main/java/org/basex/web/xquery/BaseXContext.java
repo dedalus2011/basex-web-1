@@ -7,13 +7,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.basex.core.BaseXException;
-import org.basex.core.Context;
 import org.basex.io.IOFile;
 import org.basex.io.in.TextInput;
-import org.basex.query.item.map.Map;
-import org.basex.server.LocalSession;
 import org.basex.server.Query;
+import org.basex.server.Session;
 import org.basex.web.servlet.util.ResultPage;
+import org.basex.web.session.SessionFactory;
 
 /**
  * Provides static methods to access BaseX.
@@ -35,8 +34,8 @@ public final class BaseXContext {
   /** Context. */
 //  private static final Context ctx = new Context();
   /** Session. */
-  final static LocalSession session = new LocalSession(new Context());
-    
+//  final static LocalSession session = new LocalSession(new Context());
+    final static Session session = SessionFactory.get(); 
 
   /** Do not construct me. */
   private BaseXContext() { /* void */}
@@ -44,14 +43,15 @@ public final class BaseXContext {
   /**
    * This Method reads and returns the result of a whole query.
    * @param f the filename
-   * @param get GET map
-   * @param post POST map
+   * @param get GET in JSON representation
+   * @param post POST in JSON representation
    * @param re response object
    * @param rq the request object
    * @return the query result
    * @throws IOException exception
    */
-  public static ResultPage query(final File f, final Map get, final Map post,
+  public static ResultPage query(final File f, final String get,
+      final String post,
       final HttpServletResponse re, final HttpServletRequest rq)
       throws IOException {
     return exec(TextInput.content(new IOFile(f)).toString(), get, post, re, rq);
@@ -65,15 +65,17 @@ public final class BaseXContext {
    * @param rp response object
    * @param rq request object
    * @return the query result.
+   * @throws IOException on error
    */
-  public static synchronized ResultPage exec(final String qu, final Map get, final Map post,
-      final HttpServletResponse rp, final HttpServletRequest rq) {
+  public static synchronized ResultPage exec(final String qu, final String get,
+      final String post, final HttpServletResponse rp,
+      final HttpServletRequest rq) throws IOException {
     
     setReqResp(rp, rq);
     try {
       final Query q = session.query(qu);
       
-      bind(get, post, q);
+      bind(get, post, rq.getSession(true).getId(), q);
       
       resultPage.get().setBody(q.execute());
       assert null != resultPage.get().getBody() : "Query Result must not be ''"; 
@@ -95,16 +97,20 @@ public final class BaseXContext {
   }
 
   /**
-   * Bind.
+   * Binds the GET & POST Parameters.
+   * Binds the SESSION ID to $SESSION
    * @param get get
    * @param post post
-   * @param q q
-   * @throws BaseXException ex.
+   * @param sess session id
+   * @param q the query
+   * @throws IOException on error.
    */
-  private static void bind(final Map get, final Map post, final Query q)
-      throws BaseXException {
-    q.bind("GET", get, null);
-    q.bind("POST", post, null);
+  private static void bind(final String get, final String post,
+      final String sess, final Query q)
+      throws IOException {
+    q.bind("SESSION", sess);
+    q.bind("GET", get, "json");
+    q.bind("POST", post, "json");
   }
 
   /**

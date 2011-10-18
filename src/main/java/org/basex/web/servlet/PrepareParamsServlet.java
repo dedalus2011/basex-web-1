@@ -3,18 +3,17 @@ package org.basex.web.servlet;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
-import java.util.Map.Entry;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.basex.query.QueryException;
-import org.basex.query.item.Atm;
-import org.basex.query.item.Item;
-import org.basex.query.item.Seq;
-import org.basex.query.item.Str;
-import org.basex.query.item.map.Map;
-import org.basex.util.Token;
+
 import org.eclipse.jetty.http.HttpException;
+
+import com.google.gson.Gson;
 
 /**
  * This class handles GET or POST requests and prepares a Map with the
@@ -41,11 +40,9 @@ public abstract class PrepareParamsServlet extends HttpServlet {
   @Override
   protected final void doGet(final HttpServletRequest req,
       final HttpServletResponse resp) throws IOException {
-
-    final Map get = getMap(req);
-    final Map post = Map.EMPTY;
-
-    try {
+    final String get = getMap(req);
+    final String post = "{}";
+     try {
       get(resp, req, requestedFile(req.getRequestURI()), get, post);
     } catch(final HttpException e) {
       resp.sendError(e.getStatus(), e.getReason());
@@ -57,24 +54,8 @@ public abstract class PrepareParamsServlet extends HttpServlet {
    * @param req request
    * @return POST map
    */
-  private Map getPost(final HttpServletRequest req) {
-    @SuppressWarnings("unchecked")
-    java.util.Map<String, String[]> pars = req.getParameterMap();
-
-    Map post = Map.EMPTY;
-    for(final Entry<String, String[]> e : pars.entrySet()) {
-      final Str key = Str.get(e.getKey());
-      final String[] v = e.getValue();
-      final Item[] val = new Item[v.length];
-      for(int i = val.length; --i >= 0;) val[i] = new Atm(Token.token(v[i]));
-      try {
-        post = post.insert(key, Seq.get(val, val.length), null);
-      } catch(final QueryException e1) {
-        // TODO Auto-generated catch block
-        e1.printStackTrace();
-      }
-    }
-    return post;
+  private String getPost(final HttpServletRequest req) {
+    return getMap(req);
   }
 
   /**
@@ -82,32 +63,29 @@ public abstract class PrepareParamsServlet extends HttpServlet {
    * @param req request
    * @return GET map
    */
-  private Map getMap(final HttpServletRequest req) {
+  private String getMap(final HttpServletRequest req) {
     @SuppressWarnings("unchecked")
-    java.util.Map<String, String[]> pars = req.getParameterMap();
-
-    Map get = Map.EMPTY;
-    for(final Entry<String, String[]> e : pars.entrySet()) {
-      final Str key = Str.get(e.getKey());
-      final String[] v = e.getValue();
-      final Item[] val = new Item[v.length];
-      for(int i = val.length; --i >= 0;) val[i] = new Atm(Token.token(v[i]));
-      try {
-        get = get.insert(key, Seq.get(val, val.length), null);
-      } catch(final QueryException e1) {
-        // TODO Auto-generated catch block
-        e1.printStackTrace();
+    Set<Map.Entry<String, String[]>>set = req.getParameterMap().entrySet();
+    
+    final HashMap<String, Object> result = new HashMap<String, Object>();
+    for(final Map.Entry<String,String[]> entry : set) {
+      final String key = entry.getKey();
+      final String[] value = entry.getValue();
+      if(value.length == 1){
+        result.put(key, value[0]);
+      }else{
+        result.put(key, value);
       }
     }
-    return get;
+    return new Gson().toJson(result);
   }
 
   @Override
   public final void doPost(final HttpServletRequest req,
       final HttpServletResponse resp) throws IOException {
 
-    final Map get = Map.EMPTY;
-    final Map post = getPost(req);
+    final String get = "{}";
+    final String post = getPost(req);
 
     try {
       get(resp, req, requestedFile(req.getRequestURI()), get, post);
@@ -129,7 +107,7 @@ public abstract class PrepareParamsServlet extends HttpServlet {
    */
   public abstract void get(final HttpServletResponse resp,
       final HttpServletRequest req, final File f,
-      final Map get, final Map post) throws IOException;
+      final String get, final String post) throws IOException;
 
   /**
    * Checks whether the file exists.

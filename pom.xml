@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.basex</groupId>
 	<artifactId>basex-web</artifactId>
-	<version>0.6.72</version>
+	<version>0.7.0-SNAPSHOT</version>
 	<name>BaseX Web Application Server</name>
 	<properties>
 		<jettyVersion>7.4.5.v20110725</jettyVersion>
@@ -16,7 +16,7 @@
 		<dependency>
 			<groupId>org.basex</groupId>
 			<artifactId>basex</artifactId>
-			<version>6.7.2-SNAPSHOT</version>
+			<version>7.0</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
@@ -78,6 +78,11 @@
 			<classifier>javadoc</classifier>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>1.7.1</version>
+		</dependency>
 	</dependencies>
 	<repositories>
 		<repository>
@@ -113,6 +118,11 @@
 					<target>1.6</target>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>2.7</version>
+			</plugin>
 
 			<plugin>
 				<!-- This plugin is needed for the servlet example -->
@@ -133,7 +143,23 @@
 				</executions>
 			</plugin>
 		</plugins>
+		<extensions>
+			<!-- Enabling the use of FTP -->
+			<extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ftp</artifactId>
+				<version>2.0</version>
+			</extension>
+		</extensions>
+
 	</build>
+	<distributionManagement>
+		<repository>
+			<id>basex.mvn</id>
+			<name>BaseX Maven Repository</name>
+			<url>ftp://basex.org/</url>
+		</repository>
+	</distributionManagement>
 
 
 </project>

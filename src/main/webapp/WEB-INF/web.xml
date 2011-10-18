@@ -23,10 +23,6 @@
 		<servlet-name>XQuery</servlet-name>
 		<servlet-class>org.basex.web.servlet.impl.Xails</servlet-class>
 	</servlet>
-	<servlet>
-		<servlet-name>HTML</servlet-name>
-		<servlet-class>org.basex.web.servlet.impl.Html</servlet-class>
-	</servlet>
 	<servlet-mapping>
 		<servlet-name>XQuery</servlet-name>
 		<url-pattern>*.xqy</url-pattern>
@@ -35,13 +31,4 @@
 		<servlet-name>XQuery</servlet-name>
 		<url-pattern>*.xq</url-pattern>
 	</servlet-mapping>
-	<servlet-mapping>
-		<servlet-name>HTML</servlet-name>
-		<url-pattern>*.htm</url-pattern>
-	</servlet-mapping>
-	<servlet-mapping>
-		<servlet-name>HTML</servlet-name>
-		<url-pattern>*.html</url-pattern>
-	</servlet-mapping>
-
 </web-app>

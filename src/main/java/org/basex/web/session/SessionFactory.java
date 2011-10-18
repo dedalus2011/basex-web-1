@@ -3,72 +3,42 @@
  */
 package org.basex.web.session;
 
-import java.io.IOException;
-
-import org.basex.BaseXServer;
-import org.basex.core.BaseXException;
 import org.basex.core.Context;
-import org.basex.server.ClientSession;
-import org.basex.util.Util;
+import org.basex.server.LocalSession;
+import org.basex.server.Session;
 
 /**
- * @author michael
+ * @author Michael Seiferle, <ms@basex.org>
+ * @author BaseX Team
  * 
  */
 public class SessionFactory {
 
-  private static final BaseXServer bsx;
-  static {
-    try {
-      bsx = new BaseXServer();
-    } catch(Exception e) {
-      // TODO Auto-generated catch block
-      throw Util.notexpected(e);
-    }
-        
-  }
+  /** The server instance. */
+//  @SuppressWarnings("unused")
+//  private static final BaseXServer bsx;
+//  static {
+//    try {
+//      bsx = new BaseXServer();
+//    } catch(Exception e) {
+//      // TODO Auto-generated catch block
+//      throw Util.notexpected(e);
+//    }
+//        
+//  }
   /** My Session. */
-  private static final ClientSession INSTANCE;
+  private static final Session INSTANCE;
   static {
-    try {
-      INSTANCE = new ClientSession(new Context(), "admin", "admin");
-    } catch(IOException e) {
-      // TODO Auto-generated catch block
-      throw Util.notexpected(e);
-    }
-  }
-  /** My Session. */
-  private static final ClientSession EVENTS;
-  static {
-    try {
-      EVENTS = new ClientSession(new Context(), "admin", "admin");
-    } catch(IOException e) {
-      // TODO Auto-generated catch block
-      throw Util.notexpected(e);
-    }
-    try {
-      Notifications.setUp();
-    } catch(BaseXException e) {
-      // TODO Auto-generated catch block
-      throw Util.notexpected(e);
-    }
+      INSTANCE = new LocalSession(new Context());
   }
 
   /**
    * The Session.
    * @return session singleton
    */
-  public static ClientSession get() {
+  public static Session get() {
     // TODO Auto-generated method stub
     return INSTANCE;
-  }
-  /**
-   * The Session.
-   * @return session singleton
-   */
-  public static ClientSession events() {
-    // TODO Auto-generated method stub
-    return EVENTS;
   }
 
 }

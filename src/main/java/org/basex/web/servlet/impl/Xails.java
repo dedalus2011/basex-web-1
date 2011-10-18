@@ -8,7 +8,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.basex.io.IOFile;
 import org.basex.io.in.TextInput;
-import org.basex.query.item.map.Map;
 import org.basex.web.servlet.PrepareParamsServlet;
 import org.basex.web.servlet.util.ResultPage;
 import org.basex.web.xquery.BaseXContext;
@@ -34,7 +33,7 @@ public class Xails extends PrepareParamsServlet {
   @Override
   public void get(final HttpServletResponse response,
       final HttpServletRequest req,
-      final File f, final Map get, final Map post) throws IOException {
+      final File f, final String get, final String post) throws IOException {
     // TODO Auto-generated method stub
     final StringBuilder pageBuffer = new StringBuilder(256);
 
@@ -63,7 +62,7 @@ public class Xails extends PrepareParamsServlet {
    * @throws IOException on error.
    */
   private String buildResult(final HttpServletResponse resp,
-      final HttpServletRequest req, final Map get, final Map post)
+      final HttpServletRequest req, final String get, final String post)
           throws IOException {
     final StringBuilder qry = prepareQuery();
     qry.append(TextInput.content(new IOFile(view)).toString());

@@ -1,5 +1,4 @@
 import module namespace web="http://basex.org/lib/web";
-
 let $entry := blog:find($GET('entry'))
 let $comments := $entry/comments
 return
