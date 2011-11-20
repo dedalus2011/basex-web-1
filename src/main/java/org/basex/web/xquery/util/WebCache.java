@@ -1,9 +1,7 @@
 package org.basex.web.xquery.util;
 
 import net.spy.memcached.AddrUtil;
-
 import net.spy.memcached.BinaryConnectionFactory;
-
 import net.spy.memcached.MemcachedClient;
 
 /**
@@ -12,16 +10,22 @@ import net.spy.memcached.MemcachedClient;
  * @author Sudarshan Acharyam
  * http://sacharya.com/using-memcached-with-java/
  */
-public final class MyCache {
+public final class WebCache {
 
   /** Number of cache instances. */
   private static final int NUM_CONN = 31;
 
   /** Cache items namespace. */
   private static final String NAMESPACE = "basex:";
+  
+  /** memcached IP address */
+  private static final String MEMCACHED_IP = "127.0.0.1";
+  
+  /** memcached port */
+  private static final String MEMCACHED_PORT = "11211";
 
   /** The instance. */
-  private static MyCache instance;
+  private static WebCache instance;
 
   /** Memcache client. */
   private static MemcachedClient[] m;
@@ -29,13 +33,13 @@ public final class MyCache {
   /**
    * Sets up a connection pool of initial clients.
    */
-  private MyCache() {
+  private WebCache() {
 
     try {
-      m = new MemcachedClient[MyCache.NUM_CONN];
-      for(int i = 0; i < MyCache.NUM_CONN; i++) {
+      m = new MemcachedClient[WebCache.NUM_CONN];
+      for(int i = 0; i < WebCache.NUM_CONN; i++) {
         MemcachedClient c = new MemcachedClient(new BinaryConnectionFactory(),
-            AddrUtil.getAddresses("127.0.0.1:11211"));
+            AddrUtil.getAddresses(MEMCACHED_IP + ":" + MEMCACHED_PORT));
         m[i] = c;
       }
     } catch(Exception e) { }
@@ -45,11 +49,11 @@ public final class MyCache {
    * Factory method.
    * @return cache instance.
    */
-  public static synchronized MyCache getInstance() {
+  public static synchronized WebCache getInstance() {
     // System.out.println("Instance: " + instance);
     if(instance == null) {
       System.out.println("Creating a new instance");
-      instance = new MyCache();
+      instance = new WebCache();
     }
     return instance;
   }
@@ -88,7 +92,7 @@ public final class MyCache {
     return getCache().delete(NAMESPACE + key);
   }
   /**
-   * Flushes memcache and removes all objects.
+   * Flushes memcached and removes all objects.
    */
   public void flushAll() {
     System.out.println("Flushing caches");
