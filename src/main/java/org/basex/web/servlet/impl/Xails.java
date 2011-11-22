@@ -8,6 +8,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.basex.io.IOFile;
 import org.basex.io.in.TextInput;
+import org.basex.web.cache.CacheKey;
+import org.basex.web.cache.WebCache;
 import org.basex.web.servlet.PrepareParamsServlet;
 import org.basex.web.servlet.util.ResultPage;
 import org.basex.web.xquery.BaseXContext;
@@ -22,6 +24,8 @@ import com.google.common.base.Objects;
  */
 public class Xails extends PrepareParamsServlet {
 
+  /** Caching enabled/disabled */
+  private static final boolean CACHING = true;
   /** XQuery controllers/action.xq in charge. */
   private File view;
   /** XQuery controllers/action.xq in charge. */
@@ -31,29 +35,61 @@ public class Xails extends PrepareParamsServlet {
 //  private StringBuilder pageBuffer;
 
   @Override
-  public void get(final HttpServletResponse response,
+  public void get(final HttpServletResponse resp,
       final HttpServletRequest req,
       final File f, final String get, final String post) throws IOException {
-    // TODO Auto-generated method stub
-    final StringBuilder pageBuffer = new StringBuilder(256);
 
     init(req);
-
+    
+    if (CACHING) {
+      CacheKey cacheKey = new CacheKey(f, get, post);
+      WebCache cache = WebCache.getInstance();
+      Object cacheObject = cacheKey.get(cache);
+      if (cacheObject != null && cacheObject instanceof String) {
+        // cache hit
+        resp.getWriter().write((String) cacheObject);
+      } else {
+        // cache miss
+        String content = buildContent(resp, req, f, get, post);
+        cacheKey.set(content, cache);
+        resp.getWriter().write(content);
+      }
+    } else {
+      resp.getWriter().write(buildContent(resp, req, f, get, post));
+    }
+  }
+  
+  /**
+   * Builds the response content
+   * 
+   * @param resp the response
+   * @param req request reference
+   * @param f the requested file
+   * @param get get variables Map
+   * @param post post variables Map
+   * @return the content string
+   * @throws IOException on error
+   */
+  private String buildContent(final HttpServletResponse resp,
+      final HttpServletRequest req,
+      final File f, final String get, final String post) throws IOException {
+    final StringBuilder pageBuffer = new StringBuilder(256);
+    
     final String file = req.getHeader("X-Requested-With") != null ?
         "/layouts/ajax.html" : "/layouts/default.html";
     fillPageBuffer(pageBuffer, file);
 
-    final String queryResult = buildResult(response, req, get, post);
+    final String queryResult = buildResult(resp, req, get, post);
     assert null != queryResult;
-    response.setContentType("application/xml");
-    response.setCharacterEncoding("UTF-8");
-    if(!response.containsHeader("Location"))
-      response.setStatus(HttpServletResponse.SC_OK);
-    response.getWriter().write(pageBuffer.toString().replace("{{$content}}",
-        queryResult));
+    resp.setContentType("application/xml");
+    resp.setCharacterEncoding("UTF-8");
+    if(!resp.containsHeader("Location"))
+      resp.setStatus(HttpServletResponse.SC_OK);
+    return pageBuffer.toString().replace("{{$content}}", queryResult);
   }
+  
   /**
-   * Builds the resulting XQuery file in memory and evaluates the reslt.
+   * Builds the resulting XQuery file in memory and evaluates the result.
    * @param resp the response
    * @param req request reference
    * @param get get variables Map
@@ -70,6 +106,7 @@ public class Xails extends PrepareParamsServlet {
         resp, req);
     return queryResult.getBody();
   }
+  
   /**
    * Adds the controller import to the view file.
    * @return controller import String

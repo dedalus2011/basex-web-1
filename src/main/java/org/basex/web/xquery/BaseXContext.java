@@ -11,6 +11,8 @@ import org.basex.io.IOFile;
 import org.basex.io.in.TextInput;
 import org.basex.server.Query;
 import org.basex.server.Session;
+import org.basex.web.cache.CacheKey;
+import org.basex.web.cache.WebCache;
 import org.basex.web.servlet.util.ResultPage;
 import org.basex.web.session.SessionFactory;
 
@@ -36,6 +38,8 @@ public final class BaseXContext {
   /** Session. */
 //  final static LocalSession session = new LocalSession(new Context());
     final static Session session = SessionFactory.get(); 
+    
+  private final static boolean CACHING = true;
 
   /** Do not construct me. */
   private BaseXContext() { /* void */}
@@ -45,16 +49,30 @@ public final class BaseXContext {
    * @param f the filename
    * @param get GET in JSON representation
    * @param post POST in JSON representation
-   * @param re response object
-   * @param rq the request object
+   * @param resp response object
+   * @param req the request object
    * @return the query result
    * @throws IOException exception
    */
   public static ResultPage query(final File f, final String get,
       final String post,
-      final HttpServletResponse re, final HttpServletRequest rq)
+      final HttpServletResponse resp, final HttpServletRequest req)
       throws IOException {
-    return exec(TextInput.content(new IOFile(f)).toString(), get, post, re, rq);
+    if (CACHING) {
+      CacheKey cacheKey = new CacheKey(f, get, post);
+      WebCache cache = WebCache.getInstance();
+      Object cacheObject = cacheKey.get(cache);
+      if (cacheObject != null && cacheObject instanceof String) {
+        // cache hit
+        return execCache(get, post, resp, req, (String) cacheObject);
+      }
+      // cache miss
+      String content = runQuery(TextInput.content(new IOFile(f)).toString(), get, post, resp, req);
+      cacheKey.set(content, cache);
+      return execCache(get, post, resp, req, content);
+    }
+    
+    return exec(TextInput.content(new IOFile(f)).toString(), get, post, resp, req);
   }
 
   /** 
@@ -62,26 +80,81 @@ public final class BaseXContext {
    * @param qu query string
    * @param get GET map
    * @param post POST map
-   * @param rp response object
-   * @param rq request object
+   * @param resp response object
+   * @param req request object
    * @return the query result.
    * @throws IOException on error
    */
   public static synchronized ResultPage exec(final String qu, final String get,
-      final String post, final HttpServletResponse rp,
-      final HttpServletRequest rq) throws IOException {
+      final String post, final HttpServletResponse resp,
+      final HttpServletRequest req) throws IOException {
+    return execGeneric(qu, get, post, resp, req, null);
+  }
+  
+  /** 
+   * Executes a query string.
+   * @param qu query string
+   * @param get GET map
+   * @param post POST map
+   * @param resp response object
+   * @param req request object
+   * @return the query result.
+   * @throws IOException on error
+   */
+  public static synchronized ResultPage execCache(final String get,
+      final String post, final HttpServletResponse resp,
+      final HttpServletRequest req, final String cacheContent) throws IOException {
+    return execGeneric(null, get, post, resp, req, cacheContent);
+  }
+  
+  /** 
+   * Executes a query string.
+   * @param qu query string
+   * @param get GET map
+   * @param post POST map
+   * @param resp response object
+   * @param req request object
+   * @return the query result.
+   * @throws IOException on error
+   */
+  public static synchronized ResultPage execGeneric(final String qu, final String get,
+      final String post, final HttpServletResponse resp,
+      final HttpServletRequest req, final String cacheContent) throws IOException {
     
-    setReqResp(rp, rq);
+    setReqResp(resp, req);
+    
+    if (cacheContent == null) {
+      resultPage.get().setBody(runQuery(qu, get, post, resp, req));
+    } else {
+      resultPage.get().setBody(cacheContent);
+    }
+      
+    assert null != resultPage.get().getBody() : "Query Result must not be ''"; 
+    return resultPage.get();
+  
+  }
+  
+  /**
+   * @param qu
+   * @param get
+   * @param post
+   * @param resp
+   * @param req
+   * @return
+   * @throws IOException
+   */
+  private static synchronized String runQuery(final String qu, final String get,
+      final String post, final HttpServletResponse resp,
+      final HttpServletRequest req) throws IOException {
+    setReqResp(resp, req);
     try {
       final Query q = session.query(qu);
       
-      bind(get, post, rq.getSession(true).getId(), q);
+      bind(get, post, req.getSession(true).getId(), q);
       
-      resultPage.get().setBody(q.execute());
-      assert null != resultPage.get().getBody() : "Query Result must not be ''"; 
-      return resultPage.get();
+      return q.execute();
     } catch(BaseXException e) {
-        return err(rp, rq, e);
+      return "<div class=\"error\">" + e.getMessage() + "</div>";
     }
   }
 
