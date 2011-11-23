@@ -70,10 +70,10 @@ public class CacheKey {
       if (cacheContent == null)
         return null;
       
-      s = cacheContent.split(DELIMITER, 2);
+      s = cacheContent.split("\\|", 2);
       key = s[0];
       collision();
-    } while (key != getUniqueKey());
+    } while (!key.equals(getUniqueKey()));
     
     --position;
     return s[1];
