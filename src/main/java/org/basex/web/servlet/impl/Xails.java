@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.basex.io.IOFile;
 import org.basex.io.in.TextInput;
 import org.basex.web.cache.CacheKey;
+import org.basex.web.cache.FirstLayerCacheKey;
 import org.basex.web.cache.WebCache;
 import org.basex.web.servlet.PrepareParamsServlet;
 import org.basex.web.servlet.util.ResultPage;
@@ -25,7 +26,7 @@ import com.google.common.base.Objects;
 public class Xails extends PrepareParamsServlet {
 
   /** Caching enabled/disabled */
-  private static final boolean CACHING = true;
+  private static final boolean CACHING = false;
   /** XQuery controllers/action.xq in charge. */
   private File view;
   /** XQuery controllers/action.xq in charge. */
@@ -42,7 +43,7 @@ public class Xails extends PrepareParamsServlet {
     init(req);
     
     if (CACHING) {
-      CacheKey cacheKey = new CacheKey(f, get, post);
+      CacheKey cacheKey = new CacheKey(new FirstLayerCacheKey(f, get, post));
       WebCache cache = WebCache.getInstance();
       Object cacheObject = cacheKey.get(cache);
       if (cacheObject != null && cacheObject instanceof String) {

@@ -5,63 +5,61 @@ import java.io.IOException;
 
 public class CacheKey {
   private static final int KEY_SIZE = 200;
-  private static final String DELIMITER = "|";
-  private final File file; 
-  private final String get;
-  private final String post;
-  private String hash;
+  private static final String DELIMITER = "|";    //TODO CAUTION: when changes, a change in get() is required
   private int position;
   private int hashPosition;
+  private String hash;
+  private CacheKeyInterface key;
+
   
   /**
    * @param file
    * @param get
    * @param post
    */
-  public CacheKey(final File f, final String get, final String post) {
-    this.file = f;
-    this.get = get;
-    this.post = post;
+  public CacheKey(CacheKeyInterface key) {
+    this.key = key;
     this.position = 0;
     this.hash = null;
   }
   
-  /**
-   * @return
-   */
-  public String getMemcachedHash() throws IOException {
+  private String getMemcachedHash() throws IOException {
     if (hash == null || position != hashPosition) {
-      String plainString = file.getCanonicalPath() + get + post + position;
+      String plainString = key.getPlainKey(position);
       byte[] plain = plainString.getBytes();
       int hashLength = Math.min(KEY_SIZE, plain.length);
-      byte[] hash = new byte[hashLength];
+      byte[] hashByte = new byte[hashLength];
       
       //TODO really needed?!?
       for (int i = 0; i < hashLength; ++i)
-         hash[i] = 0;
+        hashByte[i] = 0;
       
       for (int i = 0; i < plain.length; i = i + KEY_SIZE) {
-        for (int j = 0; j < hashLength; ++j)
-          hash[j] = (byte) (hash[j] ^ plain[i * KEY_SIZE + j]);
+        for (int j = 0; j < Math.min(hashLength, plain.length - i); ++j)
+          hashByte[j] = (byte) (hashByte[j] ^ plain[i + j]);
       }
       
-      this.hash = new String(hash);
-      this.hashPosition = position;
+      //TODO this is totally stupid, because Java can not handle unsigned types and spymemcached just accepts
+      // true string values
+      for (int i = 0; i < hashLength; ++i) {
+        if (hashByte[i] < 0)
+          hashByte[i] *= -1;
+        else if (hashByte[i] == 0 || hashByte[i] == 10 || hashByte[i] == 13 || hashByte[i] == 32)
+          hashByte[i] += 1;
+      }
+      
+      hash = new String(hashByte);
+      hashPosition = position;
     }
-    
     return this.hash;
   }
   
-  public String getUniqueKey() throws IOException {
-    return file.getCanonicalPath() + get + post;
-  }
-  
-  public void collision() {
+  private void collision() {
     ++position;
   }
   
   public Object get(WebCache cache) throws IOException {
-    String key;
+    String keyString;
     String[] s;
     String cacheContent;
     
@@ -71,9 +69,9 @@ public class CacheKey {
         return null;
       
       s = cacheContent.split("\\|", 2);
-      key = s[0];
+      keyString = s[0];
       collision();
-    } while (!key.equals(getUniqueKey()));
+    } while (!keyString.equals(key.getUniqueKey()));
     
     --position;
     return s[1];
@@ -89,6 +87,6 @@ public class CacheKey {
     
     --position;
     
-    cache.set(getMemcachedHash(), getUniqueKey() + DELIMITER + content);
+    cache.set(getMemcachedHash(), key.getUniqueKey() + DELIMITER + content);
   }
 }

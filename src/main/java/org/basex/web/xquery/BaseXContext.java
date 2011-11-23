@@ -12,6 +12,7 @@ import org.basex.io.in.TextInput;
 import org.basex.server.Query;
 import org.basex.server.Session;
 import org.basex.web.cache.CacheKey;
+import org.basex.web.cache.SecondLayerCacheKey;
 import org.basex.web.cache.WebCache;
 import org.basex.web.servlet.util.ResultPage;
 import org.basex.web.session.SessionFactory;
@@ -58,20 +59,6 @@ public final class BaseXContext {
       final String post,
       final HttpServletResponse resp, final HttpServletRequest req)
       throws IOException {
-    if (CACHING) {
-      CacheKey cacheKey = new CacheKey(f, get, post);
-      WebCache cache = WebCache.getInstance();
-      Object cacheObject = cacheKey.get(cache);
-      if (cacheObject != null && cacheObject instanceof String) {
-        // cache hit
-        return execCache(get, post, resp, req, (String) cacheObject);
-      }
-      // cache miss
-      String content = runQuery(TextInput.content(new IOFile(f)).toString(), get, post, resp, req);
-      cacheKey.set(content, cache);
-      return execCache(get, post, resp, req, content);
-    }
-    
     return exec(TextInput.content(new IOFile(f)).toString(), get, post, resp, req);
   }
 
@@ -88,6 +75,20 @@ public final class BaseXContext {
   public static synchronized ResultPage exec(final String qu, final String get,
       final String post, final HttpServletResponse resp,
       final HttpServletRequest req) throws IOException {
+    if (CACHING) {
+      CacheKey cacheKey = new CacheKey(new SecondLayerCacheKey(qu, get, post));
+      WebCache cache = WebCache.getInstance();
+      Object cacheObject = cacheKey.get(cache);
+      if (cacheObject != null && cacheObject instanceof String) {
+        // cache hit
+        return execCache(get, post, resp, req, (String) cacheObject);
+      }
+      // cache miss
+      String content = runQuery(qu, get, post, resp, req);
+      cacheKey.set(content, cache);
+      return execCache(get, post, resp, req, content);
+    }
+    
     return execGeneric(qu, get, post, resp, req, null);
   }
   
