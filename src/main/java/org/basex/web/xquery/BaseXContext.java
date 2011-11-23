@@ -13,7 +13,6 @@ import org.basex.server.Query;
 import org.basex.server.Session;
 import org.basex.web.cache.CacheKey;
 import org.basex.web.cache.SecondLayerCacheKey;
-import org.basex.web.cache.WebCache;
 import org.basex.web.servlet.util.ResultPage;
 import org.basex.web.session.SessionFactory;
 
@@ -40,6 +39,7 @@ public final class BaseXContext {
 //  final static LocalSession session = new LocalSession(new Context());
     final static Session session = SessionFactory.get(); 
     
+  /** Enabled/disable caching */
   private final static boolean CACHING = true;
 
   /** Do not construct me. */
@@ -77,15 +77,14 @@ public final class BaseXContext {
       final HttpServletRequest req) throws IOException {
     if (CACHING) {
       CacheKey cacheKey = new CacheKey(new SecondLayerCacheKey(qu, get, post));
-      WebCache cache = WebCache.getInstance();
-      Object cacheObject = cacheKey.get(cache);
+      Object cacheObject = cacheKey.get();
       if (cacheObject != null && cacheObject instanceof String) {
         // cache hit
         return execCache(get, post, resp, req, (String) cacheObject);
       }
       // cache miss
       String content = runQuery(qu, get, post, resp, req);
-      cacheKey.set(content, cache);
+      cacheKey.set(content);
       return execCache(get, post, resp, req, content);
     }
     
@@ -94,11 +93,11 @@ public final class BaseXContext {
   
   /** 
    * Executes a query string.
-   * @param qu query string
    * @param get GET map
    * @param post POST map
    * @param resp response object
    * @param req request object
+   * @param cacheContent The value of this cache key
    * @return the query result.
    * @throws IOException on error
    */
@@ -115,6 +114,7 @@ public final class BaseXContext {
    * @param post POST map
    * @param resp response object
    * @param req request object
+   * @param cacheContent The value of this cache key
    * @return the query result.
    * @throws IOException on error
    */
@@ -136,13 +136,15 @@ public final class BaseXContext {
   }
   
   /**
-   * @param qu
-   * @param get
-   * @param post
-   * @param resp
-   * @param req
-   * @return
-   * @throws IOException
+   * Runs the query on the BaseX database.
+   * 
+   * @param qu query string
+   * @param get GET map
+   * @param post POST map
+   * @param resp response object
+   * @param req request object
+   * @return the query result.
+   * @throws IOException on error
    */
   private static synchronized String runQuery(final String qu, final String get,
       final String post, final HttpServletResponse resp,
@@ -155,7 +157,7 @@ public final class BaseXContext {
       
       return q.execute();
     } catch(BaseXException e) {
-      return "<div class=\"error\">" + e.getMessage() + "</div>";
+      return err(e);
     }
   }
 
@@ -188,16 +190,13 @@ public final class BaseXContext {
   }
 
   /**
-   * Returns a ResultPage containing an Error Message
-   * @param rp response
-   * @param rq request
+   * Returns a HTML string containing an Error Message
+   * 
    * @param e error
-   * @return ResultPage with error message
+   * @return String with error message
    */
-  private static ResultPage err(final HttpServletResponse rp,
-      final HttpServletRequest rq, Exception e) {
-    return new ResultPage("<div class=\"error\">" + e.getMessage() + "</div>",
-        rp, rq);
+  private static String err(Exception e) {
+    return "<div class=\"error\">" + e.getMessage() + "</div>";
   }
 
 

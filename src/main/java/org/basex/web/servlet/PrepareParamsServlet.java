@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.basex.web.cache.WebCache;
 import org.eclipse.jetty.http.HttpException;
 
 import com.google.gson.Gson;

@@ -3,15 +3,29 @@ package org.basex.web.cache;
 import java.io.File;
 import java.io.IOException;
 
+/**
+ * Is a key for the first layer (before the actual file system access)
+ * 
+ * @author Dirk Kirsten
+ *
+ */
 public class FirstLayerCacheKey implements CacheKeyInterface {
+  /** The file which is called */
   private final File file; 
+  /** GET parameters of the request */
   private final String get;
+  /** POST parameters of the request */
   private final String post;
   
-  public FirstLayerCacheKey(final File file, final String get, final String post) {
-      this.file = file;
-      this.get = get;
-      this.post = post;
+  /**
+   * @param f The requested file
+   * @param g GET parameters of the request
+   * @param p POST parameters of the request
+   */
+  public FirstLayerCacheKey(final File f, final String g, final String p) {
+      file = f;
+      get = g;
+      post = p;
   }
   
   @Override
@@ -21,6 +35,6 @@ public class FirstLayerCacheKey implements CacheKeyInterface {
 
   @Override
   public String getPlainKey(int position) throws IOException {
-    return file.getCanonicalPath() + get + post + position;
+    return getUniqueKey() + position;
   }
 }

@@ -1,28 +1,42 @@
 package org.basex.web.cache;
 
-import java.io.File;
 import java.io.IOException;
 
+/**
+ * Provides all necessary methods to access the keys/values from within memcached. 
+ * 
+ * @author Dirk Kirsten
+ *
+ */
 public class CacheKey {
+  /** The maximum size of the key. Memcached keys are limited to 256 byte and we do use a Namespace */
   private static final int KEY_SIZE = 200;
+  /** A delimiter to separate the real key and the value in the memcached value */
   private static final String DELIMITER = "|";    //TODO CAUTION: when changes, a change in get() is required
+  /** The number of collisions already occurred */
   private int position;
+  /** The number of collisions which occurred on the last time the hash was calculated */
   private int hashPosition;
+  /** stores the hash to prevent recomputation */
   private String hash;
+  /** The actual key we use */
   private CacheKeyInterface key;
 
   
+
   /**
-   * @param file
-   * @param get
-   * @param post
+   * @param k The actual used key
    */
-  public CacheKey(CacheKeyInterface key) {
-    this.key = key;
+  public CacheKey(CacheKeyInterface k) {
+    this.key = k;
     this.position = 0;
     this.hash = null;
   }
   
+  /**
+   * @return Calculates a hash which is not longer than KEY_SIZE
+   * @throws IOException Some keys may access files and if something goes wrong there, this error is thrown.
+   */
   private String getMemcachedHash() throws IOException {
     if (hash == null || position != hashPosition) {
       String plainString = key.getPlainKey(position);
@@ -54,11 +68,21 @@ public class CacheKey {
     return this.hash;
   }
   
+  /**
+   * Two hashs had a collision
+   */
   private void collision() {
     ++position;
   }
   
-  public Object get(WebCache cache) throws IOException {
+  /**
+   * Get the cache value of this key.
+   * 
+   * @return Returns the memcached value for the given key
+   * @throws IOException i/o error
+   */
+  public Object get() throws IOException {
+    WebCache cache = WebCache.getInstance();
     String keyString;
     String[] s;
     String cacheContent;
@@ -77,7 +101,14 @@ public class CacheKey {
     return s[1];
   }
   
-  public void set(String content, WebCache cache) throws IOException {
+  /**
+   * Sets a new cache value for this key.
+   * 
+   * @param content Sets this content for the specified key in memcached
+   * @throws IOException i/o error
+   */
+  public void set(String content) throws IOException {
+    WebCache cache = WebCache.getInstance();
     String cacheContent;
     
     do {
@@ -88,5 +119,16 @@ public class CacheKey {
     --position;
     
     cache.set(getMemcachedHash(), key.getUniqueKey() + DELIMITER + content);
+  }
+  
+  /**
+   * invalidates the given key if existing in memcached
+   * 
+   * @throws IOException i/o error
+   */
+  public void invalidate() throws IOException {
+    WebCache cache = WebCache.getInstance();
+    if (get() != null)
+      cache.delete(key.getUniqueKey());
   }
 }

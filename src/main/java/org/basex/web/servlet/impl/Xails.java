@@ -10,7 +10,6 @@ import org.basex.io.IOFile;
 import org.basex.io.in.TextInput;
 import org.basex.web.cache.CacheKey;
 import org.basex.web.cache.FirstLayerCacheKey;
-import org.basex.web.cache.WebCache;
 import org.basex.web.servlet.PrepareParamsServlet;
 import org.basex.web.servlet.util.ResultPage;
 import org.basex.web.xquery.BaseXContext;
@@ -44,19 +43,18 @@ public class Xails extends PrepareParamsServlet {
     
     if (CACHING) {
       CacheKey cacheKey = new CacheKey(new FirstLayerCacheKey(f, get, post));
-      WebCache cache = WebCache.getInstance();
-      Object cacheObject = cacheKey.get(cache);
+      Object cacheObject = cacheKey.get();
       if (cacheObject != null && cacheObject instanceof String) {
         // cache hit
         resp.getWriter().write((String) cacheObject);
       } else {
         // cache miss
-        String content = buildContent(resp, req, f, get, post);
-        cacheKey.set(content, cache);
+        String content = buildContent(resp, req, get, post);
+        cacheKey.set(content);
         resp.getWriter().write(content);
       }
     } else {
-      resp.getWriter().write(buildContent(resp, req, f, get, post));
+      resp.getWriter().write(buildContent(resp, req, get, post));
     }
   }
   
@@ -65,15 +63,13 @@ public class Xails extends PrepareParamsServlet {
    * 
    * @param resp the response
    * @param req request reference
-   * @param f the requested file
    * @param get get variables Map
    * @param post post variables Map
    * @return the content string
    * @throws IOException on error
    */
   private String buildContent(final HttpServletResponse resp,
-      final HttpServletRequest req,
-      final File f, final String get, final String post) throws IOException {
+      final HttpServletRequest req, final String get, final String post) throws IOException {
     final StringBuilder pageBuffer = new StringBuilder(256);
     
     final String file = req.getHeader("X-Requested-With") != null ?
