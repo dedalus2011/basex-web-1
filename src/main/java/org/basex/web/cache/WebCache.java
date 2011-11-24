@@ -78,8 +78,8 @@ public final class WebCache {
    * @param o object to set
    */
   public void set(final String key, final int ttl, final Object o) {
+    System.out.println("Set for KEY " + NAMESPACE + key + ", LENGTH = " + key.length());
     getCache().set(NAMESPACE + key, ttl, o);
-    System.out.println("Set for KEY " + NAMESPACE + key);
   }
 
   /**
@@ -88,6 +88,7 @@ public final class WebCache {
    * @return the cached object
    */
   public Object get(final String key) {
+    System.out.println("key LENGTH = " + key.length());
     final Object o = getCache().get(NAMESPACE + key);
     if(o == null) {
       System.out.println("Cache MISS for KEY: " + NAMESPACE + key);

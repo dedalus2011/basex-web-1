@@ -110,6 +110,8 @@ public class Xails extends PrepareParamsServlet {
     Matcher incMatcher = incPattern.matcher(fileContent);
     while (incMatcher.find()) {
       String inc = fileContent.substring(incMatcher.start(), incMatcher.end());
+      int startInc = incMatcher.start();
+      int endInc = incMatcher.end();
       
       // does the user specify to not cache this object?
       boolean doCache = true;
@@ -131,7 +133,7 @@ public class Xails extends PrepareParamsServlet {
       // replace the include string with the actual content
       File recFile = new File(f.getParent() + "/" + inc.substring(startSrc, endSrc));
       String recContent = buildResult(recFile, resp, req, get, post);
-      fileContent = incMatcher.replaceFirst(recContent);
+      fileContent = fileContent.substring(0, startInc) + recContent + fileContent.substring(endInc);
     }
     
     qry.append(fileContent);

@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 public class CacheKey {
   /** The maximum size of the key. Memcached keys are limited to 256 byte and we do use a Namespace */
-  private static final int KEY_SIZE = 200;
+  private static final int KEY_SIZE = 50;
   /** A delimiter to separate the real key and the value in the memcached value */
   private static final String DELIMITER = "|";    //TODO CAUTION: when changes, a change in get() is required
   /** The number of collisions already occurred */
@@ -54,10 +54,12 @@ public class CacheKey {
       //TODO this is totally stupid, because Java can not handle unsigned types and spymemcached just accepts
       // true string values
       for (int i = 0; i < hashLength; ++i) {
+        if (hashByte[i] == 32 || hashByte[i] <= 14)
+          hashByte[i] += 14;
         if (hashByte[i] < 0)
           hashByte[i] *= -1;
-        else if (hashByte[i] == 0 || hashByte[i] == 10 || hashByte[i] == 13 || hashByte[i] == 32)
-          hashByte[i] += 1;
+        
+        hashByte[i] = (byte) Math.min(120, hashByte[i]);
       }
       
       hash = new String(hashByte);
