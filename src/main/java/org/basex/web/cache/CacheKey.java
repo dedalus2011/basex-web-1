@@ -22,8 +22,6 @@ public class CacheKey {
   /** The actual key we use */
   private CacheKeyInterface key;
 
-  
-
   /**
    * @param k The actual used key
    */

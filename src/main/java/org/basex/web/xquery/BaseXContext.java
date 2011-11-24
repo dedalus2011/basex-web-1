@@ -1,14 +1,11 @@
 package org.basex.web.xquery;
 
-import java.io.File;
 import java.io.IOException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.basex.core.BaseXException;
-import org.basex.io.IOFile;
-import org.basex.io.in.TextInput;
 import org.basex.server.Query;
 import org.basex.server.Session;
 import org.basex.web.cache.CacheKey;
@@ -47,7 +44,7 @@ public final class BaseXContext {
   
   /**
    * This Method reads and returns the result of a whole query.
-   * @param f the filename
+   * @param qu the query string
    * @param get GET in JSON representation
    * @param post POST in JSON representation
    * @param resp response object
@@ -55,11 +52,16 @@ public final class BaseXContext {
    * @return the query result
    * @throws IOException exception
    */
-  public static ResultPage query(final File f, final String get,
+  public static ResultPage query(final String qu, final String get,
       final String post,
       final HttpServletResponse resp, final HttpServletRequest req)
       throws IOException {
-    return exec(TextInput.content(new IOFile(f)).toString(), get, post, resp, req);
+
+    setReqResp(resp, req);
+    
+    resultPage.get().setBody(exec(qu, get, post, resp, req));
+    
+    return resultPage.get();
   }
 
   /** 
@@ -72,7 +74,7 @@ public final class BaseXContext {
    * @return the query result.
    * @throws IOException on error
    */
-  public static synchronized ResultPage exec(final String qu, final String get,
+  public static synchronized String exec(final String qu, final String get,
       final String post, final HttpServletResponse resp,
       final HttpServletRequest req) throws IOException {
     if (CACHING) {
@@ -101,7 +103,7 @@ public final class BaseXContext {
    * @return the query result.
    * @throws IOException on error
    */
-  public static synchronized ResultPage execCache(final String get,
+  public static synchronized String execCache(final String get,
       final String post, final HttpServletResponse resp,
       final HttpServletRequest req, final String cacheContent) throws IOException {
     return execGeneric(null, get, post, resp, req, cacheContent);
@@ -118,20 +120,20 @@ public final class BaseXContext {
    * @return the query result.
    * @throws IOException on error
    */
-  public static synchronized ResultPage execGeneric(final String qu, final String get,
+  public static synchronized String execGeneric(final String qu, final String get,
       final String post, final HttpServletResponse resp,
       final HttpServletRequest req, final String cacheContent) throws IOException {
+    String ret;
     
-    setReqResp(resp, req);
     
     if (cacheContent == null) {
-      resultPage.get().setBody(runQuery(qu, get, post, resp, req));
+      ret = runQuery(qu, get, post, resp, req);
     } else {
-      resultPage.get().setBody(cacheContent);
+      ret = cacheContent;
     }
       
-    assert null != resultPage.get().getBody() : "Query Result must not be ''"; 
-    return resultPage.get();
+    assert null != ret : "Query Result must not be ''"; 
+    return ret;
   
   }
   

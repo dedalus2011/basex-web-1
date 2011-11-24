@@ -2,6 +2,8 @@ package org.basex.web.servlet.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -76,7 +78,7 @@ public class Xails extends PrepareParamsServlet {
         "/layouts/ajax.html" : "/layouts/default.html";
     fillPageBuffer(pageBuffer, file);
 
-    final String queryResult = buildResult(resp, req, get, post);
+    final String queryResult = buildResult(view, resp, req, get, post);
     assert null != queryResult;
     resp.setContentType("application/xml");
     resp.setCharacterEncoding("UTF-8");
@@ -87,6 +89,8 @@ public class Xails extends PrepareParamsServlet {
   
   /**
    * Builds the resulting XQuery file in memory and evaluates the result.
+   * 
+   * @param f the file to be build
    * @param resp the response
    * @param req request reference
    * @param get get variables Map
@@ -94,12 +98,44 @@ public class Xails extends PrepareParamsServlet {
    * @return the evaluated result
    * @throws IOException on error.
    */
-  private String buildResult(final HttpServletResponse resp,
+  private String buildResult(final File f, final HttpServletResponse resp,
       final HttpServletRequest req, final String get, final String post)
           throws IOException {
     final StringBuilder qry = prepareQuery();
-    qry.append(TextInput.content(new IOFile(view)).toString());
-    final ResultPage queryResult = BaseXContext.exec(qry.toString(), get, post,
+    String fileContent = TextInput.content(new IOFile(f)).toString();
+    
+    /* starts the recursive inclusive of xq-files */
+    //TODO should include max recursive level to prevent loops
+    Pattern incPattern = Pattern.compile("\\{\\{\\s*include(\\:no\\-cache|\\:cache)?\\s+src.*\\}\\}");
+    Matcher incMatcher = incPattern.matcher(fileContent);
+    while (incMatcher.find()) {
+      String inc = fileContent.substring(incMatcher.start(), incMatcher.end());
+      
+      // does the user specify to not cache this object?
+      boolean doCache = true;
+      Pattern cachePattern = Pattern.compile("include\\:no\\-cache");
+      Matcher cacheMatcher = cachePattern.matcher(inc);
+      if (cacheMatcher.find()) 
+        doCache = false;
+      
+      // get the file to be included
+      Pattern srcPattern = Pattern.compile("\\ssrc\\s*=\\s*\"");
+      Matcher srcMatcher = srcPattern.matcher(inc);
+      srcMatcher.find();
+      int startSrc = srcMatcher.end();
+      srcPattern = Pattern.compile("\"");
+      srcMatcher = srcPattern.matcher(inc.substring(startSrc + 1));
+      srcMatcher.find();
+      int endSrc = startSrc + srcMatcher.start() + 1;
+      
+      // replace the include string with the actual content
+      File recFile = new File(f.getParent() + "/" + inc.substring(startSrc, endSrc));
+      String recContent = buildResult(recFile, resp, req, get, post);
+      fileContent = incMatcher.replaceFirst(recContent);
+    }
+    
+    qry.append(fileContent);
+    final ResultPage queryResult = BaseXContext.query(qry.toString(), get, post,
         resp, req);
     return queryResult.getBody();
   }
@@ -121,6 +157,7 @@ public class Xails extends PrepareParamsServlet {
         controller.getCanonicalPath()));
     return qry;
   }
+  
   /**
    * Gets only the filename without suffix.
    * @param n filename

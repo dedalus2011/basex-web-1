@@ -7,6 +7,7 @@ import net.spy.memcached.MemcachedClient;
 /**
  * Memcache Facade.
  * @author Michael Seiferle, BaseX Team
+ * @author Dirk Kirsten
  * @author Sudarshan Acharyam
  * http://sacharya.com/using-memcached-with-java/
  */
