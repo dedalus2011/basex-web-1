@@ -54,8 +54,10 @@ public class CacheKey {
       //TODO this is totally stupid, because Java can not handle unsigned types and spymemcached just accepts
       // true string values
       for (int i = 0; i < hashLength; ++i) {
-        if (hashByte[i] == 32 || hashByte[i] == 0 || hashByte[i] == 11 || hashByte[i] == 13)
+        if (hashByte[i] == ' ' || hashByte[i] == 0 || hashByte[i] == '\n' || hashByte[i] == '\r')
           hashByte[i] += 1;
+        
+        //hashByte[i] = (char) Math.max(33, hashByte[i]);
       }
       
       hash = new String(hashByte);

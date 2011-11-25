@@ -31,7 +31,7 @@ public class Xails extends PrepareParamsServlet {
   /** Caching at second level enabled/disabled */
   private static final boolean CACHING_SECONDLAYER = true;
   /** Max recursion depth for inclusion of xq-files */
-  private static final int MAX_DEPTH = 3;
+  private static final int MAX_DEPTH = 20;
   /** XQuery controllers/action.xq in charge. */
   private File view;
   /** XQuery controllers/action.xq in charge. */
