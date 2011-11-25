@@ -32,5 +32,7 @@ import module namespace web="http://basex.org/lib/web";
 }}&lt;/ul&gt;
     </listing>
     
+    {{include:cache src="inc.xq"}}
+    
     </p>
  </div>

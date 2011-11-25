@@ -145,6 +145,8 @@ public class Xails extends PrepareParamsServlet {
       else
         recContent = "";
       fileContent = fileContent.substring(0, startInc) + recContent + fileContent.substring(endInc);
+      
+      incMatcher = incPattern.matcher(fileContent);
     }
     
     qry.append(fileContent);
