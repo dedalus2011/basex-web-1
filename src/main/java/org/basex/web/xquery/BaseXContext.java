@@ -49,17 +49,18 @@ public final class BaseXContext {
    * @param post POST in JSON representation
    * @param resp response object
    * @param req the request object
+   * @param doCache should this element be cached?
    * @return the query result
    * @throws IOException exception
    */
   public static ResultPage query(final String qu, final String get,
-      final String post,
-      final HttpServletResponse resp, final HttpServletRequest req)
+      final String post, final HttpServletResponse resp, 
+      final HttpServletRequest req, final boolean doCache)
       throws IOException {
 
     setReqResp(resp, req);
     
-    resultPage.get().setBody(exec(qu, get, post, resp, req));
+    resultPage.get().setBody(exec(qu, get, post, resp, req, doCache));
     
     return resultPage.get();
   }
@@ -71,13 +72,14 @@ public final class BaseXContext {
    * @param post POST map
    * @param resp response object
    * @param req request object
+   * @param doCache should this element be cached?
    * @return the query result.
    * @throws IOException on error
    */
   public static synchronized String exec(final String qu, final String get,
       final String post, final HttpServletResponse resp,
-      final HttpServletRequest req) throws IOException {
-    if (CACHING) {
+      final HttpServletRequest req, final boolean doCache) throws IOException {
+    if (CACHING && doCache) {
       CacheKey cacheKey = new CacheKey(new SecondLayerCacheKey(qu, get, post));
       Object cacheObject = cacheKey.get();
       if (cacheObject != null && cacheObject instanceof String) {

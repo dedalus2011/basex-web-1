@@ -26,8 +26,10 @@ import com.google.common.base.Objects;
  */
 public class Xails extends PrepareParamsServlet {
 
-  /** Caching enabled/disabled */
-  private static final boolean CACHING = false;
+  /** Caching at first level enabled/disabled */
+  private static final boolean CACHING_FIRSTLAYER = false;
+  /** Caching at second level enabled/disabled */
+  private static final boolean CACHING_SECONDLAYER = true;
   /** XQuery controllers/action.xq in charge. */
   private File view;
   /** XQuery controllers/action.xq in charge. */
@@ -43,7 +45,7 @@ public class Xails extends PrepareParamsServlet {
 
     init(req);
     
-    if (CACHING) {
+    if (CACHING_FIRSTLAYER) {
       CacheKey cacheKey = new CacheKey(new FirstLayerCacheKey(f, get, post));
       Object cacheObject = cacheKey.get();
       if (cacheObject != null && cacheObject instanceof String) {
@@ -78,7 +80,7 @@ public class Xails extends PrepareParamsServlet {
         "/layouts/ajax.html" : "/layouts/default.html";
     fillPageBuffer(pageBuffer, file);
 
-    final String queryResult = buildResult(view, resp, req, get, post);
+    final String queryResult = buildResult(view, resp, req, get, post, CACHING_SECONDLAYER);
     assert null != queryResult;
     resp.setContentType("application/xml");
     resp.setCharacterEncoding("UTF-8");
@@ -95,11 +97,13 @@ public class Xails extends PrepareParamsServlet {
    * @param req request reference
    * @param get get variables Map
    * @param post post variables Map
+   * @param doCache should this element be cached?
    * @return the evaluated result
    * @throws IOException on error.
    */
   private String buildResult(final File f, final HttpServletResponse resp,
-      final HttpServletRequest req, final String get, final String post)
+      final HttpServletRequest req, final String get, final String post,
+      final boolean doCache)
           throws IOException {
     final StringBuilder qry = prepareQuery();
     String fileContent = TextInput.content(new IOFile(f)).toString();
@@ -114,11 +118,11 @@ public class Xails extends PrepareParamsServlet {
       int endInc = incMatcher.end();
       
       // does the user specify to not cache this object?
-      boolean doCache = true;
+      boolean incDoCache = true;
       Pattern cachePattern = Pattern.compile("include\\:no\\-cache");
       Matcher cacheMatcher = cachePattern.matcher(inc);
       if (cacheMatcher.find()) 
-        doCache = false;
+        incDoCache = false;
       
       // get the file to be included
       Pattern srcPattern = Pattern.compile("\\ssrc\\s*=\\s*\"");
@@ -132,13 +136,13 @@ public class Xails extends PrepareParamsServlet {
       
       // replace the include string with the actual content
       File recFile = new File(f.getParent() + "/" + inc.substring(startSrc, endSrc));
-      String recContent = buildResult(recFile, resp, req, get, post);
+      String recContent = buildResult(recFile, resp, req, get, post, incDoCache);
       fileContent = fileContent.substring(0, startInc) + recContent + fileContent.substring(endInc);
     }
     
     qry.append(fileContent);
     final ResultPage queryResult = BaseXContext.query(qry.toString(), get, post,
-        resp, req);
+        resp, req, doCache);
     return queryResult.getBody();
   }
   

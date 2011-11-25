@@ -16,7 +16,7 @@ import module namespace web="http://basex.org/lib/web";
       <dd>…</dd>
     </dl>
     
-    {{include:cache src="inc.xq"}}
+    {{include:no-cache src="inc.xq"}}
     
     <h2>Mini Example</h2>
     <p>The following list is generated dynamically by <a href="http://basex.org" target="_blank">BaseX</a>:</p>
