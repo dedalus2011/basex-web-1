@@ -30,6 +30,8 @@ public class Xails extends PrepareParamsServlet {
   private static final boolean CACHING_FIRSTLAYER = false;
   /** Caching at second level enabled/disabled */
   private static final boolean CACHING_SECONDLAYER = true;
+  /** Max recursion depth for inclusion of xq-files */
+  private static final int MAX_DEPTH = 3;
   /** XQuery controllers/action.xq in charge. */
   private File view;
   /** XQuery controllers/action.xq in charge. */
@@ -80,7 +82,7 @@ public class Xails extends PrepareParamsServlet {
         "/layouts/ajax.html" : "/layouts/default.html";
     fillPageBuffer(pageBuffer, file);
 
-    final String queryResult = buildResult(view, resp, req, get, post, CACHING_SECONDLAYER);
+    final String queryResult = buildResult(view, resp, req, get, post, 0, CACHING_SECONDLAYER);
     assert null != queryResult;
     resp.setContentType("application/xml");
     resp.setCharacterEncoding("UTF-8");
@@ -97,13 +99,14 @@ public class Xails extends PrepareParamsServlet {
    * @param req request reference
    * @param get get variables Map
    * @param post post variables Map
+   * @param recursionDepth the current level of the recursion
    * @param doCache should this element be cached?
    * @return the evaluated result
    * @throws IOException on error.
    */
   private String buildResult(final File f, final HttpServletResponse resp,
       final HttpServletRequest req, final String get, final String post,
-      final boolean doCache)
+      final int recursionDepth, final boolean doCache)
           throws IOException {
     final StringBuilder qry = prepareQuery();
     String fileContent = TextInput.content(new IOFile(f)).toString();
@@ -136,7 +139,11 @@ public class Xails extends PrepareParamsServlet {
       
       // replace the include string with the actual content
       File recFile = new File(f.getParent() + "/" + inc.substring(startSrc, endSrc));
-      String recContent = buildResult(recFile, resp, req, get, post, incDoCache);
+      String recContent;
+      if (recursionDepth < MAX_DEPTH)
+        recContent = buildResult(recFile, resp, req, get, post, recursionDepth + 1, incDoCache);
+      else
+        recContent = "";
       fileContent = fileContent.substring(0, startInc) + recContent + fileContent.substring(endInc);
     }
     
