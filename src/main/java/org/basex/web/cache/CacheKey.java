@@ -40,7 +40,7 @@ public class CacheKey {
       String plainString = key.getPlainKey(position);
       byte[] plain = plainString.getBytes();
       int hashLength = Math.min(KEY_SIZE, plain.length);
-      byte[] hashByte = new byte[hashLength];
+      char[] hashByte = new char[hashLength];
       
       //TODO really needed?!?
       for (int i = 0; i < hashLength; ++i)
@@ -48,18 +48,14 @@ public class CacheKey {
       
       for (int i = 0; i < plain.length; i = i + KEY_SIZE) {
         for (int j = 0; j < Math.min(hashLength, plain.length - i); ++j)
-          hashByte[j] = (byte) (hashByte[j] ^ plain[i + j]);
+          hashByte[j] = (char) (hashByte[j] ^ plain[i + j]);
       }
       
       //TODO this is totally stupid, because Java can not handle unsigned types and spymemcached just accepts
       // true string values
       for (int i = 0; i < hashLength; ++i) {
-        if (hashByte[i] == 32 || hashByte[i] <= 14)
-          hashByte[i] += 14;
-        if (hashByte[i] < 0)
-          hashByte[i] *= -1;
-        
-        hashByte[i] = (byte) Math.min(120, hashByte[i]);
+        if (hashByte[i] == 32 || hashByte[i] == 0 || hashByte[i] == 11 || hashByte[i] == 13)
+          hashByte[i] += 1;
       }
       
       hash = new String(hashByte);
