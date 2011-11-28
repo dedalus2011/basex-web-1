@@ -93,7 +93,7 @@ public class CacheKey {
       s = cacheContent.split("\\|", 2);
       keyString = s[0];
       collision();
-    } while (!keyString.equals(key.getUniqueKey()));
+    } while (!keyString.equals(key.getMemcachedKey()));
     
     --position;
     return s[1];
@@ -116,7 +116,7 @@ public class CacheKey {
     
     --position;
     
-    cache.set(getMemcachedHash(), key.getUniqueKey() + DELIMITER + content);
+    cache.set(getMemcachedHash(), key.getMemcachedKey() + DELIMITER + content);
   }
   
   /**
@@ -127,6 +127,6 @@ public class CacheKey {
   public void invalidate() throws IOException {
     WebCache cache = WebCache.getInstance();
     if (get() != null)
-      cache.delete(key.getUniqueKey());
+      cache.delete(key.getMemcachedKey());
   }
 }

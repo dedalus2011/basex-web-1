@@ -28,7 +28,7 @@ public class SecondLayerCacheKey implements CacheKeyInterface {
   }
   
   @Override
-  public String getUniqueKey() throws IOException {
+  public String getMemcachedKey() throws IOException {
     return query + get + post;
   }
 

@@ -29,12 +29,12 @@ public class FirstLayerCacheKey implements CacheKeyInterface {
   }
   
   @Override
-  public String getUniqueKey() throws IOException {
+  public String getMemcachedKey() throws IOException {
     return file.getCanonicalPath() + get + post;
   }
 
   @Override
   public String getPlainKey(int position) throws IOException {
-    return getUniqueKey() + position;
+    return getMemcachedKey() + position;
   }
 }

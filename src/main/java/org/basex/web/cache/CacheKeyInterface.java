@@ -21,5 +21,5 @@ public interface CacheKeyInterface {
    * @return Returns the unique key used for memcached, as memcached does not handle collisions
    * @throws IOException A key may depend on some file(s), if anything is wrong there IOException is thrown
    */
-  public String getUniqueKey() throws IOException;
+  public String getMemcachedKey() throws IOException;
 }
