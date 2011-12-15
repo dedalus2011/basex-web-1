@@ -27,14 +27,19 @@ public class FirstLayerCacheKey implements CacheKeyInterface {
       get = g;
       post = p;
   }
-  
+
   @Override
-  public String getMemcachedKey() throws IOException {
-    return file.getCanonicalPath() + get + post;
+  public String firstPart() {
+    try {
+      return file.getCanonicalPath();
+    } catch(IOException e) {
+      e.printStackTrace();
+      return null;
+    }
   }
 
   @Override
-  public String getPlainKey(int position) throws IOException {
-    return getMemcachedKey() + position;
+  public String secondPart() {
+    return get + post;
   }
 }

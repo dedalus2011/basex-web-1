@@ -1,52 +1,41 @@
 package org.basex.web.cache;
 
-import net.spy.memcached.AddrUtil;
-import net.spy.memcached.BinaryConnectionFactory;
-import net.spy.memcached.MemcachedClient;
+import java.util.Map;
+
+import voldemort.client.ClientConfig;
+import voldemort.client.StoreClient;
+import voldemort.client.StoreClientFactory;
+import voldemort.client.SocketStoreClientFactory;
+
 
 /**
- * Memcache Facade.
- * @author Michael Seiferle, BaseX Team
+ * Voldemort facade
+ * 
  * @author Dirk Kirsten
- * @author Sudarshan Acharyam
- * http://sacharya.com/using-memcached-with-java/
  */
 public final class WebCache {
-
-  /** Number of cache instances. */
-  private static final int NUM_CONN = 31;
-
   /** Cache items namespace. */
-  private static final String NAMESPACE = "basex:";
+  private static final String NAMESPACE = "basex-web";
   
-  /** memcached IP address. */
-  private static final String MEMCACHED_IP = "127.0.0.1";
+  /** voldemort IP address. */
+  private static final String VOLDEMORT_IP = "127.0.0.1";
   
-  /** memcached port. */
-  private static final String MEMCACHED_PORT = "11211";
-  
-  /** standard time-to-live for cache values */
-  private static final int STANDARD_TTL = 3600;
+  /** voldemort port. */
+  private static final String VOLDEMORT_PORT = "6667";
 
   /** The instance. */
   private static WebCache instance;
 
-  /** Memcache clients. */
-  private static MemcachedClient[] m;
+  /** Voldemort client. */
+  private static StoreClient<String, Map<String, String>> c;
 
   /**
-   * Sets up a connection pool of initial clients.
+   * Sets up a single client.
    */
   private WebCache() {
-
-    try {
-      m = new MemcachedClient[WebCache.NUM_CONN];
-      for(int i = 0; i < WebCache.NUM_CONN; i++) {
-        MemcachedClient c = new MemcachedClient(new BinaryConnectionFactory(),
-            AddrUtil.getAddresses(MEMCACHED_IP + ":" + MEMCACHED_PORT));
-        m[i] = c;
-      }
-    } catch(Exception e) { }
+    String bootstrapUrl = "tcp://" + VOLDEMORT_IP + ":" + VOLDEMORT_PORT;
+    StoreClientFactory factory = new SocketStoreClientFactory(new ClientConfig().setBootstrapUrls(bootstrapUrl));
+    c = factory.getStoreClient(NAMESPACE);
   }
 
   /**
@@ -54,8 +43,7 @@ public final class WebCache {
    * @return cache instance.
    */
   public static synchronized WebCache getInstance() {
-    // System.out.println("Instance: " + instance);
-    if(instance == null) {
+    if (instance == null) {
       System.out.println("Creating a new instance");
       instance = new WebCache();
     }
@@ -67,19 +55,19 @@ public final class WebCache {
    * @param key the key
    * @param o object to set
    */
-  public void set(final String key, final Object o) {
-    set(key, STANDARD_TTL, o);
+  public void set(final CacheKeyInterface key, final String o) {
+    Map <String, String> map = getFirst(key);
+    map.put(key.secondPart(), o);
+    c.put(key.firstPart(), map);
   }
   
   /**
    * Sets an Item.
    * @param key the key
-   * @param ttl time to live in seconds
    * @param o object to set
    */
-  public void set(final String key, final int ttl, final Object o) {
-    System.out.println("Set for KEY " + NAMESPACE + key + ", LENGTH = " + key.length());
-    getCache().set(NAMESPACE + key, ttl, o);
+  public void set(final CacheKeyInterface key, final Map<String, String> o) {
+    c.put(key.firstPart(), o);
   }
 
   /**
@@ -87,31 +75,64 @@ public final class WebCache {
    * @param key the key
    * @return the cached object
    */
-  public Object get(final String key) {
-    System.out.println("key LENGTH = " + key.length());
-    final Object o = getCache().get(NAMESPACE + key);
+  public Map<String, String> getFirst(final CacheKeyInterface key) {
+    final Map<String, String> o = c.getValue(key.firstPart());
     if(o == null) {
-      System.out.println("Cache MISS for KEY: " + NAMESPACE + key);
+      System.out.println("Cache MISS for KEY: " + key);
     } else {
-      System.out.println("Cache HIT for KEY: " + NAMESPACE + key);
+      System.out.println("Cache HIT for KEY: " + key);
     }
     return o;
   }
 
   /**
+   * Gets an item from the cache.
+   * @param key the key
+   * @return the cached object
+   */
+  public String get(final CacheKeyInterface key) {
+    String o;
+    final Map<String, String> map = c.getValue(key.firstPart());
+    if (map == null) {
+      System.out.println("Cache MISS for KEY: " + key);
+      o = null;
+    } else {
+      o = map.get(key.secondPart());
+      if (o == null) {
+        System.out.println("Cache MISS for KEY: " + key);
+      } else {
+        System.out.println("Cache HIT for KEY: " + key);
+      }
+    }
+    return o;
+  }
+  
+  /**
    * Removes the object <code>key</code> from the cache pool.
    * @param key the key
    * @return the object that has been just deleted.
    */
-  public Object delete(final String key) {
-    return getCache().delete(NAMESPACE + key);
+  public boolean deleteAll(final CacheKeyInterface key) {
+    return c.delete(key.firstPart());
   }
+  
   /**
-   * Flushes memcached and removes all objects.
+   * Removes the object <code>key</code> from the cache pool.
+   * @param key the key
+   * @return the object that has been just deleted.
+   */
+  public Object delete(final CacheKeyInterface key) {
+    Map<String, String> map = c.getValue(key.firstPart());
+    boolean del = map.remove(key.secondPart()) != null;
+    set(key, map);
+    return del;
+  }
+  
+  /**
+   * Flushes voldemort and removes all objects.
    */
   public void flushAll() {
-    System.out.println("Flushing caches");
-    getCache().flush();
+    /*TODO */
     return;
   }
 
@@ -119,12 +140,7 @@ public final class WebCache {
    * Gets an cache instance.
    * @return a cache client.
    */
-  public MemcachedClient getCache() {
-    MemcachedClient c = null;
-    try {
-      int i = (int) (Math.random() * (NUM_CONN - 1));
-      c = m[i];
-    } catch(Exception e) { }
+  public StoreClient<String, Map<String, String>> getCache() {
     return c;
   }
 }

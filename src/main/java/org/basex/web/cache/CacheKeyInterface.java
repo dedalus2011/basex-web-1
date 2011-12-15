@@ -1,7 +1,5 @@
 package org.basex.web.cache;
 
-import java.io.IOException;
-
 /**
  * Interface for the various different keys for the web cache. As we cache
  * on different levels, also the key may differ. At the moment we support to cache levels,
@@ -11,15 +9,6 @@ import java.io.IOException;
  *
  */
 public interface CacheKeyInterface {
-  /**
-   * @param position used for collision detection. When the hash collides, the position-counter is incremented
-   * @return Returns the full plain key
-   * @throws IOException A key may depend on some file(s), if anything is wrong there IOException is thrown
-   */
-  public String getPlainKey(int position) throws IOException;
-  /**
-   * @return Returns the unique key used for memcached, as memcached does not handle collisions
-   * @throws IOException A key may depend on some file(s), if anything is wrong there IOException is thrown
-   */
-  public String getMemcachedKey() throws IOException;
+  public String firstPart();
+  public String secondPart();
 }

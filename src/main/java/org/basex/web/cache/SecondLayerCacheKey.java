@@ -1,7 +1,5 @@
 package org.basex.web.cache;
 
-import java.io.IOException;
-
 /**
  * The key for the second cache layer on a xq-level.
  * 
@@ -26,14 +24,14 @@ public class SecondLayerCacheKey implements CacheKeyInterface {
       get = g;
       post = p;
   }
-  
+
   @Override
-  public String getMemcachedKey() throws IOException {
-    return query + get + post;
+  public String firstPart() {
+    return query;
   }
 
   @Override
-  public String getPlainKey(int position) throws IOException {
-    return query + get + post + position;
+  public String secondPart() {
+    return get + post;
   }
 }
