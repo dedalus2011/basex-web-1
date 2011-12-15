@@ -51,9 +51,7 @@ When starting Voldemort, you need to define a store named "basex-web". A single-
 
 You could then start Voldemort by running
 
-<code>
-$ ./bin/voldemort-server.sh config/single_node_cluster/
-</code>
+		$ ./bin/voldemort-server.sh config/single_node_cluster/
 
 Usage
 -----
