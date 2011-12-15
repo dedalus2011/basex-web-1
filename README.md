@@ -6,6 +6,12 @@ Requirements
 ------------
 [Java 1.6](http://java.com/getjava/index.jsp "Download Free Java Software") and [Maven](http://maven.apache.org/ "Maven - 
     Welcome to Apache Maven") are highly recommended to run the project. 
+    
+You have to install voldemort locally, as it has no public maven repository. Execute the following commands:
+<code>
+$ mvn install:install-file -Dfile=voldemort-0.90.1.jar -DgroupId=voldemort -DartifactId=voldemort-core -Dversion=0.90.1 -Dpackaging=jar -DgeneratePom=true
+$ mvn install:install-file -Dfile=voldemort-contrib-0.90.1.jar -DgroupId=voldemort -DartifactId=voldemort-contrib -Dversion=0.90.1 -Dpackaging=jar -DgeneratePom=true
+</code>
 
 Usage
 -----
