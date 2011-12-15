@@ -8,46 +8,46 @@ Requirements
     Welcome to Apache Maven") are highly recommended to run the project. 
     
 You have to install voldemort locally, as it has no public maven repository. Execute the following commands:
-<code>
-$ mvn install:install-file -Dfile=voldemort-0.90.1.jar -DgroupId=voldemort -DartifactId=voldemort-core -Dversion=0.90.1 -Dpackaging=jar -DgeneratePom=true
-$ mvn install:install-file -Dfile=voldemort-contrib-0.90.1.jar -DgroupId=voldemort -DartifactId=voldemort-contrib -Dversion=0.90.1 -Dpackaging=jar -DgeneratePom=true
-</code>
+
+		$ mvn install:install-file -Dfile=voldemort-0.90.1.jar -DgroupId=voldemort -DartifactId=voldemort-core -Dversion=0.90.1 -Dpackaging=jar -DgeneratePom=true
+		$ mvn install:install-file -Dfile=voldemort-contrib-0.90.1.jar -DgroupId=voldemort -DartifactId=voldemort-contrib -Dversion=0.90.1 -Dpackaging=jar -DgeneratePom=true
+
 
 When starting Voldemort, you need to define a store named "basex-web". A single-node example stores.xml file could look like this:
-<code>
-<stores>
-  <store>
-    <name>basex-web</name>
-    <persistence>bdb</persistence>
-    <description>baseX store</description>
-    <owners>basex@basex.org </owners>
-    <routing>client</routing>
-    <replication-factor>1</replication-factor>
-    <required-reads>1</required-reads>
-    <required-writes>1</required-writes>
-    <key-serializer>
-      <type>string</type>
-    </key-serializer>
-    <value-serializer>
-      <type>java-serialization</type>
-    </value-serializer>
-  </store>
-  <view>
-    <name>basex-view</name>
-    <view-of>basex-web</view-of>
-    <owners>basex@basex.org</owners>
-    <view-class>
-      voldemort.store.views.UpperCaseView
-    </view-class>
-    <value-serializer>
-      <type>string</type>
-    </value-serializer>
-    <transforms-serializer>
-        <type>java-serialization</type>
-    </transforms-serializer>
-  </view>
-</stores>
-</code>
+
+		<stores>
+		  <store>
+		    <name>basex-web</name>
+		    <persistence>bdb</persistence>
+		    <description>baseX store</description>
+		    <owners>basex@basex.org </owners>
+		    <routing>client</routing>
+		    <replication-factor>1</replication-factor>
+		    <required-reads>1</required-reads>
+		    <required-writes>1</required-writes>
+		    <key-serializer>
+		      <type>string</type>
+		    </key-serializer>
+		    <value-serializer>
+		      <type>java-serialization</type>
+		    </value-serializer>
+		  </store>
+		  <view>
+		    <name>basex-view</name>
+		    <view-of>basex-web</view-of>
+		    <owners>basex@basex.org</owners>
+		    <view-class>
+		      voldemort.store.views.UpperCaseView
+		    </view-class>
+		    <value-serializer>
+		      <type>string</type>
+		    </value-serializer>
+		    <transforms-serializer>
+		        <type>java-serialization</type>
+		    </transforms-serializer>
+		  </view>
+		</stores>
+
 
 You could then start Voldemort by running
 
