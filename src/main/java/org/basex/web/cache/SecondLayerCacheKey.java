@@ -26,12 +26,17 @@ public class SecondLayerCacheKey implements CacheKeyInterface {
   }
 
   @Override
-  public String firstPart() {
+  public String getFirstPart() {
     return query;
   }
 
   @Override
-  public String secondPart() {
+  public String getSecondPart() {
     return get + post;
+  }
+  
+  @Override
+  public String getKeyString() {
+    return getFirstPart() + getSecondPart();
   }
 }

@@ -29,7 +29,7 @@ public class FirstLayerCacheKey implements CacheKeyInterface {
   }
 
   @Override
-  public String firstPart() {
+  public String getFirstPart() {
     try {
       return file.getCanonicalPath();
     } catch(IOException e) {
@@ -39,7 +39,12 @@ public class FirstLayerCacheKey implements CacheKeyInterface {
   }
 
   @Override
-  public String secondPart() {
+  public String getSecondPart() {
     return get + post;
+  }
+
+  @Override
+  public String getKeyString() {
+    return getFirstPart() + getSecondPart();
   }
 }

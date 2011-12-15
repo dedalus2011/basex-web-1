@@ -9,6 +9,22 @@ package org.basex.web.cache;
  *
  */
 public interface CacheKeyInterface {
-  public String firstPart();
-  public String secondPart();
+  /**
+   * Each key can be split up as two different parts. This is the first and more general part.
+   * 
+   * @return String representation of the first part of the key
+   */
+  public String getFirstPart();
+  /**
+   * Each key can be split up as two different parts. This is the latter part and more specialised.
+   * 
+   * @return String representation of the second part of the key
+   */
+  public String getSecondPart();
+  /**
+   * Get the whole key
+   * 
+   * @return String representation of the whole key
+   */
+  public String getKeyString();
 }

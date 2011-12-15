@@ -1,5 +1,6 @@
 package org.basex.web.cache;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import voldemort.client.ClientConfig;
@@ -57,8 +58,11 @@ public final class WebCache {
    */
   public void set(final CacheKeyInterface key, final String o) {
     Map <String, String> map = getFirst(key);
-    map.put(key.secondPart(), o);
-    c.put(key.firstPart(), map);
+    if (map == null)
+      map = new HashMap<String, String>();
+    
+    map.put(key.getSecondPart(), o);
+    c.put(key.getFirstPart(), map);
   }
   
   /**
@@ -67,7 +71,7 @@ public final class WebCache {
    * @param o object to set
    */
   public void set(final CacheKeyInterface key, final Map<String, String> o) {
-    c.put(key.firstPart(), o);
+    c.put(key.getFirstPart(), o);
   }
 
   /**
@@ -76,11 +80,11 @@ public final class WebCache {
    * @return the cached object
    */
   public Map<String, String> getFirst(final CacheKeyInterface key) {
-    final Map<String, String> o = c.getValue(key.firstPart());
+    final Map<String, String> o = c.getValue(key.getFirstPart());
     if(o == null) {
-      System.out.println("Cache MISS for KEY: " + key);
+      System.out.println("Cache MISS for KEY: " + key.getKeyString());
     } else {
-      System.out.println("Cache HIT for KEY: " + key);
+      System.out.println("Cache HIT for KEY: " + key.getKeyString());
     }
     return o;
   }
@@ -92,16 +96,16 @@ public final class WebCache {
    */
   public String get(final CacheKeyInterface key) {
     String o;
-    final Map<String, String> map = c.getValue(key.firstPart());
+    final Map<String, String> map = c.getValue(key.getFirstPart());
     if (map == null) {
-      System.out.println("Cache MISS for KEY: " + key);
+      System.out.println("Cache MISS for KEY: " + key.getKeyString());
       o = null;
     } else {
-      o = map.get(key.secondPart());
+      o = map.get(key.getSecondPart());
       if (o == null) {
-        System.out.println("Cache MISS for KEY: " + key);
+        System.out.println("Cache MISS for KEY: " + key.getKeyString());
       } else {
-        System.out.println("Cache HIT for KEY: " + key);
+        System.out.println("Cache HIT for KEY: " + key.getKeyString());
       }
     }
     return o;
@@ -113,7 +117,7 @@ public final class WebCache {
    * @return the object that has been just deleted.
    */
   public boolean deleteAll(final CacheKeyInterface key) {
-    return c.delete(key.firstPart());
+    return c.delete(key.getFirstPart());
   }
   
   /**
@@ -122,8 +126,8 @@ public final class WebCache {
    * @return the object that has been just deleted.
    */
   public Object delete(final CacheKeyInterface key) {
-    Map<String, String> map = c.getValue(key.firstPart());
-    boolean del = map.remove(key.secondPart()) != null;
+    Map<String, String> map = c.getValue(key.getFirstPart());
+    boolean del = map.remove(key.getSecondPart()) != null;
     set(key, map);
     return del;
   }
