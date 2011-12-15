@@ -29,7 +29,7 @@ When starting Voldemort, you need to define a store named "basex-web". A single-
       <type>string</type>
     </key-serializer>
     <value-serializer>
-      <type>string</type>
+      <type>java-serialization</type>
     </value-serializer>
   </store>
   <view>
@@ -43,7 +43,7 @@ When starting Voldemort, you need to define a store named "basex-web". A single-
       <type>string</type>
     </value-serializer>
     <transforms-serializer>
-        <type>string</type>
+        <type>java-serialization</type>
     </transforms-serializer>
   </view>
 </stores>
