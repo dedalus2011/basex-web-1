@@ -13,6 +13,48 @@ $ mvn install:install-file -Dfile=voldemort-0.90.1.jar -DgroupId=voldemort -Dart
 $ mvn install:install-file -Dfile=voldemort-contrib-0.90.1.jar -DgroupId=voldemort -DartifactId=voldemort-contrib -Dversion=0.90.1 -Dpackaging=jar -DgeneratePom=true
 </code>
 
+When starting Voldemort, you need to define a store named "basex-web". A single-node example stores.xml file could look like this:
+<code>
+<stores>
+  <store>
+    <name>basex-web</name>
+    <persistence>bdb</persistence>
+    <description>baseX store</description>
+    <owners>basex@basex.org </owners>
+    <routing>client</routing>
+    <replication-factor>1</replication-factor>
+    <required-reads>1</required-reads>
+    <required-writes>1</required-writes>
+    <key-serializer>
+      <type>string</type>
+    </key-serializer>
+    <value-serializer>
+      <type>string</type>
+    </value-serializer>
+  </store>
+  <view>
+    <name>basex-view</name>
+    <view-of>basex-web</view-of>
+    <owners>basex@basex.org</owners>
+    <view-class>
+      voldemort.store.views.UpperCaseView
+    </view-class>
+    <value-serializer>
+      <type>string</type>
+    </value-serializer>
+    <transforms-serializer>
+        <type>string</type>
+    </transforms-serializer>
+  </view>
+</stores>
+</code>
+
+You could then start Voldemort by running
+
+<code>
+$ ./bin/voldemort-server.sh config/single_node_cluster/
+</code>
+
 Usage
 -----
 To get the demo application up and running 
