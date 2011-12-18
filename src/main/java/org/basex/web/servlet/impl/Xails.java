@@ -2,8 +2,10 @@ package org.basex.web.servlet.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.regex.Pattern; 
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -12,6 +14,7 @@ import org.basex.io.IOFile;
 import org.basex.io.in.TextInput;
 import org.basex.web.cache.CacheKey;
 import org.basex.web.cache.FirstLayerCacheKey;
+import org.basex.web.cache.InvalidateCache;
 import org.basex.web.servlet.PrepareParamsServlet;
 import org.basex.web.servlet.util.ResultPage;
 import org.basex.web.xquery.BaseXContext;
@@ -27,7 +30,7 @@ import com.google.common.base.Objects;
 public class Xails extends PrepareParamsServlet {
 
   /** Caching at first level enabled/disabled */
-  private static final boolean CACHING_FIRSTLAYER = false;
+  private static final boolean CACHING_FIRSTLAYER = true;
   /** Caching at second level enabled/disabled */
   private static final boolean CACHING_SECONDLAYER = true;
   /** Max recursion depth for inclusion of xq-files */
@@ -37,8 +40,30 @@ public class Xails extends PrepareParamsServlet {
   /** XQuery controllers/action.xq in charge. */
   private File controller;
 
+
+  /**
+   * Input string as second argument for the db:event expression
+   */
+  public static String tobeinvalidated;
+
+  /**
+   * Reads input string for the view to be invalidated
+   * @param s input string
+   */
+
+  // the user specifies the cache to be invalidated
+
+  private static void callScanner (String s) {
+
+    Scanner scanner = new Scanner(System.in);     
+    System.out.printf("Cache to be invalidated for query: "+ s);
+    tobeinvalidated = scanner.next() + "/*";
+
+    InvalidateCache.getInstance().invalidatecache();
+
+  }
   /** Current Page Buffer. **/
-//  private StringBuilder pageBuffer;
+  //  private StringBuilder pageBuffer;
 
   @Override
   public void get(final HttpServletResponse resp,
@@ -46,7 +71,14 @@ public class Xails extends PrepareParamsServlet {
       final File f, final String get, final String post) throws IOException {
 
     init(req);
-    
+
+    //invalidate cache keys for the first cache layer
+
+    CacheKey cacheKey1 = new CacheKey(new FirstLayerCacheKey(f, get, post));
+
+    if (PrepareParamsServlet.flag == false)
+      cacheKey1.invalidate();
+
     if (CACHING_FIRSTLAYER) {
       CacheKey cacheKey = new CacheKey(new FirstLayerCacheKey(f, get, post));
       Object cacheObject = cacheKey.get();
@@ -63,7 +95,7 @@ public class Xails extends PrepareParamsServlet {
       resp.getWriter().write(buildContent(resp, req, get, post));
     }
   }
-  
+
   /**
    * Builds the response content
    * 
@@ -77,7 +109,7 @@ public class Xails extends PrepareParamsServlet {
   private String buildContent(final HttpServletResponse resp,
       final HttpServletRequest req, final String get, final String post) throws IOException {
     final StringBuilder pageBuffer = new StringBuilder(256);
-    
+
     final String file = req.getHeader("X-Requested-With") != null ?
         "/layouts/ajax.html" : "/layouts/default.html";
     fillPageBuffer(pageBuffer, file);
@@ -90,11 +122,11 @@ public class Xails extends PrepareParamsServlet {
       resp.setStatus(HttpServletResponse.SC_OK);
     return pageBuffer.toString().replace("{{$content}}", queryResult);
   }
-  
+
   /**
    * Builds the resulting XQuery file in memory and evaluates the result.
    * 
-   * @param f the file to be build
+   * @param f the file to be built
    * @param resp the response
    * @param req request reference
    * @param get get variables Map
@@ -110,7 +142,7 @@ public class Xails extends PrepareParamsServlet {
           throws IOException {
     final StringBuilder qry = prepareQuery();
     String fileContent = TextInput.content(new IOFile(f)).toString();
-    
+
     /* starts the recursive inclusive of xq-files */
     //TODO should include max recursive level to prevent loops
     Pattern incPattern = Pattern.compile("\\{\\{\\s*include(\\:no\\-cache|\\:cache)?\\s+src.*\\}\\}");
@@ -119,24 +151,66 @@ public class Xails extends PrepareParamsServlet {
       String inc = fileContent.substring(incMatcher.start(), incMatcher.end());
       int startInc = incMatcher.start();
       int endInc = incMatcher.end();
-      
+
       // does the user specify to not cache this object?
       boolean incDoCache = true;
       Pattern cachePattern = Pattern.compile("include\\:no\\-cache");
       Matcher cacheMatcher = cachePattern.matcher(inc);
       if (cacheMatcher.find()) 
         incDoCache = false;
-      
+
+      // Array list of matches for update operations contained in the view file 
+      // For each occurrence of an update operation in the view file the user 
+      // specifies the views that should be invalidated
+
+      ArrayList<String> matches = new ArrayList<String>();
+
+      Pattern pattern = Pattern.compile("[\\w']*update");
+      Pattern pattern2 = Pattern.compile("[\\w']*delete");
+
+      Matcher matcher1 = pattern.matcher(fileContent);
+      Matcher matcher2 = pattern2.matcher(fileContent);
+
+      while (matcher1.find()) {
+
+        String tostore = new String (fileContent.substring(matcher1.start (), matcher1.end () +20));
+        matches.add(tostore);
+
+      }
+
+      while (matcher2.find()){
+        String tostore2 = new String (fileContent.substring(matcher2.start (), matcher2.end () +20));
+
+        matches.add(tostore2);
+      }
+
+      String first = "";
+      for (String s : matches) {
+        first = "";
+        int i = 0;
+        while(i < s.length() && s.charAt(i) != ' ')
+        {
+          first+=s.charAt(i);
+          i++;
+        }
+
+        if (first.equals("update") || first.equals("delete")) {
+          callScanner(s);
+        }
+      }
+
+
       // get the file to be included
       Pattern srcPattern = Pattern.compile("\\ssrc\\s*=\\s*\"");
       Matcher srcMatcher = srcPattern.matcher(inc);
       srcMatcher.find();
       int startSrc = srcMatcher.end();
+
       srcPattern = Pattern.compile("\"");
       srcMatcher = srcPattern.matcher(inc.substring(startSrc + 1));
       srcMatcher.find();
       int endSrc = startSrc + srcMatcher.start() + 1;
-      
+
       // replace the include string with the actual content
       File recFile = new File(f.getParent() + "/" + inc.substring(startSrc, endSrc));
       String recContent;
@@ -145,16 +219,16 @@ public class Xails extends PrepareParamsServlet {
       else
         recContent = "";
       fileContent = fileContent.substring(0, startInc) + recContent + fileContent.substring(endInc);
-      
+
       incMatcher = incPattern.matcher(fileContent);
     }
-    
+
     qry.append(fileContent);
     final ResultPage queryResult = BaseXContext.query(qry.toString(), get, post,
         resp, req, doCache);
     return queryResult.getBody();
   }
-  
+
   /**
    * Adds the controller import to the view file.
    * @return controller import String
@@ -166,13 +240,13 @@ public class Xails extends PrepareParamsServlet {
     final String controllername = dbname(controller.getName());
 
     qry.append(String.format("import module namespace "
-        + "%s=\"http://www.basex.org/myapp/%s\" " + "at \"%s\";\n",
+        + "%s =\"http://www.basex.org/myapp/ %s\" "   + "at \"%s\";\n",
         controllername,
         controllername,
-        controller.getCanonicalPath()));
+        controller.getCanonicalPath() ));
     return qry;
   }
-  
+
   /**
    * Gets only the filename without suffix.
    * @param n filename
@@ -205,7 +279,7 @@ public class Xails extends PrepareParamsServlet {
         );
     final String cpath = String.format("controllers/%s.xq",
         cntr
-    );
+        );
 
     try {
       controller = super.requestedFile(cpath);

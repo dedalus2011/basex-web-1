@@ -22,8 +22,14 @@ import com.google.gson.Gson;
  * @author Michael Seiferle <ms@basex.org>
  */
 public abstract class PrepareParamsServlet extends HttpServlet {
+  
   /** Version. */
   private static final long serialVersionUID = 8548004356377035911L;
+  /** 
+   * set to false if the xq file doesn't exist on the server
+   */
+  public static boolean flag;
+
   /** the web root: *TODO* this path might be configurable in future version. */
   protected final String fPath;
 
@@ -42,7 +48,7 @@ public abstract class PrepareParamsServlet extends HttpServlet {
       final HttpServletResponse resp) throws IOException {
     final String get = getMap(req);
     final String post = "{}";
-     try {
+    try {
       get(resp, req, requestedFile(req.getRequestURI()), get, post);
     } catch(final HttpException e) {
       resp.sendError(e.getStatus(), e.getReason());
@@ -65,8 +71,8 @@ public abstract class PrepareParamsServlet extends HttpServlet {
    */
   private String getMap(final HttpServletRequest req) {
     @SuppressWarnings("unchecked")
-    Set<Map.Entry<String, String[]>>set = req.getParameterMap().entrySet();
-    
+    Set<Map.Entry<String, String[]>> set = req.getParameterMap().entrySet();
+
     final HashMap<String, Object> result = new HashMap<String, Object>();
     for(final Map.Entry<String,String[]> entry : set) {
       final String key = entry.getKey();
@@ -119,11 +125,13 @@ public abstract class PrepareParamsServlet extends HttpServlet {
     final File f = new File(fPath, file);
     if(!f.exists()) throw new HttpException(HttpServletResponse.SC_NOT_FOUND,
         "The file '" + file + "' doesn't exist on the server.");
+    if(!f.exists())
+      flag = false;
     try {
       final File canon = f.getCanonicalFile();
       if(!canon.toString().startsWith(fPath)) throw new HttpException(
           HttpServletResponse.SC_FORBIDDEN, "The requested file '"
-          + file + "' isn't below the server root.");
+              + file + "' isn't below the server root.");
       return canon;
     } catch(final IOException ioe) {
       // TODO too much information / unsafe?
@@ -133,3 +141,4 @@ public abstract class PrepareParamsServlet extends HttpServlet {
   }
 
 }
+  

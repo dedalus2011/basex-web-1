@@ -29,7 +29,7 @@ public final class BaseXContext {
   };
   
   
-  
+
   /** Context. */
 //  private static final Context ctx = new Context();
   /** Session. */
@@ -80,7 +80,10 @@ public final class BaseXContext {
       final String post, final HttpServletResponse resp,
       final HttpServletRequest req, final boolean doCache) throws IOException {
     if (CACHING && doCache) {
-      CacheKey cacheKey = new CacheKey(new SecondLayerCacheKey(qu, get, post));
+      
+       CacheKey cacheKey = new CacheKey(new SecondLayerCacheKey(qu, get, post));
+     
+      
       Object cacheObject = cacheKey.get();
       if (cacheObject != null && cacheObject instanceof String) {
         // cache hit
