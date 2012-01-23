@@ -26,7 +26,7 @@ public abstract class PrepareParamsServlet extends HttpServlet {
   /** Version. */
   private static final long serialVersionUID = 8548004356377035911L;
   /** 
-   * set to false if the xq file doesn't exist on the server
+   * set to false if the xquery file doesn't exist on the server
    */
   public static boolean flag;
 
